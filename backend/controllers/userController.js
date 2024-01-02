@@ -3,6 +3,7 @@ import asyncHandler from "../middlewares/asyncHandler.js";
 import bcrypt from "bcryptjs"
 import createToken from "../utils/token.js";
 
+
 const createUser = asyncHandler(async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -41,4 +42,33 @@ const createUser = asyncHandler(async (req, res) => {
     
 })  
 
-export { createUser }
+const userLogin = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    const userExisting = await User.findOne({ email })
+    if(userExisting) {
+        const isPasswordValid = await bcrypt.compare(password, userExisting.password)
+        if(isPasswordValid){
+            createToken(res, userExisting._id)
+            // res.status(201).json({
+            //     _id: newUser._id,
+            //     username: newUser.username,
+            //     email: newUser.email,
+            //     isAdmin: newUser.isAdmin
+            // })
+            return;
+        }
+    }
+});
+
+const logoutUser = asyncHandler(async(req, res) => {
+    //remove the token from the database and set it to null on the client side
+    res.cookie("jwt", "", {
+        httpOnly: true,
+        expires: new Date(0) 
+    })
+
+    res.status(200).json({Message: "User has been successfully logged out"})
+})
+
+export { createUser, userLogin, logoutUser }
